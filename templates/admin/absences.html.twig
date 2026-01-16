@@ -4,6 +4,20 @@
 
 {% block body %}
 <div class="container-fluid">
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>{{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>{{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -176,36 +190,42 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="absenceForm">
+                <form id="absenceForm" action="{{ path('admin_absences_new') }}" method="POST">
                     <div class="mb-3">
                         <label class="form-label">Étudiant</label>
-                        <select class="form-select" required>
+                        <select class="form-select" name="etudiant" required>
                             <option value="">Sélectionner un étudiant...</option>
+                            {% for etudiant in etudiants %}
+                                <option value="{{ etudiant.id }}">{{ etudiant.nomComplet }} ({{ etudiant.matricule }})</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Date</label>
-                        <input type="date" class="form-control" value="{{ "now"|date("Y-m-d") }}" required>
+                        <input type="date" class="form-control" name="date" value="{{ "now"|date("Y-m-d") }}" required>
                     </div>
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label">Heure début</label>
-                            <input type="time" class="form-control" value="08:00">
+                            <input type="time" class="form-control" name="heure_debut" value="08:00">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Heure fin</label>
-                            <input type="time" class="form-control" value="10:00">
+                            <input type="time" class="form-control" name="heure_fin" value="10:00">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Matière</label>
-                        <select class="form-select" required>
+                        <select class="form-select" name="matiere" required>
                             <option value="">Sélectionner une matière...</option>
+                            {% for matiere in matieres %}
+                                <option value="{{ matiere.id }}">{{ matiere.nom }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Motif (optionnel)</label>
-                        <textarea class="form-control" rows="2" placeholder="Ajouter un motif..."></textarea>
+                        <textarea class="form-control" name="motif" rows="2" placeholder="Ajouter un motif..."></textarea>
                     </div>
                 </form>
             </div>

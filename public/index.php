@@ -2,6 +2,9 @@
 
 use App\Kernel;
 
+// Suppress E_STRICT deprecation warnings (PHP 8.4 compatibility)
+error_reporting(E_ALL & ~E_DEPRECATED);
+
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
 return function (array $context) {

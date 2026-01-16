@@ -2,11 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\Absence;
 use App\Repository\AbsenceRepository;
 use App\Repository\EtudiantRepository;
 use App\Repository\JustificationRepository;
 use App\Repository\ClasseRepository;
+use App\Repository\MatiereRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -18,7 +22,9 @@ class DashboardController extends AbstractController
         private EtudiantRepository $etudiantRepository,
         private AbsenceRepository $absenceRepository,
         private JustificationRepository $justificationRepository,
-        private ClasseRepository $classeRepository
+        private ClasseRepository $classeRepository,
+        private MatiereRepository $matiereRepository,
+        private EntityManagerInterface $entityManager
     ) {}
 
     #[Route('/', name: 'admin_dashboard')]
@@ -73,14 +79,58 @@ class DashboardController extends AbstractController
         ]);
     }
 
-    #[Route('/absences', name: 'admin_absences')]
+    #[Route('/absences', name: 'admin_absences', methods: ['GET'])]
     public function absences(): Response
     {
         $absences = $this->absenceRepository->findLatest(50);
+        $etudiants = $this->etudiantRepository->findAll();
+        $matieres = $this->matiereRepository->findAll();
         
         return $this->render('admin/absences.html.twig', [
             'absences' => $absences,
+            'etudiants' => $etudiants,
+            'matieres' => $matieres,
         ]);
+    }
+
+    #[Route('/absences/new', name: 'admin_absences_new', methods: ['POST'])]
+    public function newAbsence(Request $request): Response
+    {
+        $etudiantId = $request->request->get('etudiant');
+        $matiereId = $request->request->get('matiere');
+        $dateAbsence = $request->request->get('date');
+        $heureDebut = $request->request->get('heure_debut');
+        $heureFin = $request->request->get('heure_fin');
+        $motif = $request->request->get('motif');
+
+        $etudiant = $this->etudiantRepository->find($etudiantId);
+        $matiere = $this->matiereRepository->find($matiereId);
+
+        if (!$etudiant || !$matiere) {
+            $this->addFlash('error', 'Étudiant ou matière invalide.');
+            return $this->redirectToRoute('admin_absences');
+        }
+
+        $absence = new Absence();
+        $absence->setEtudiant($etudiant);
+        $absence->setMatiere($matiere);
+        $absence->setDateAbsence(new \DateTime($dateAbsence));
+        
+        if ($heureDebut) {
+            $absence->setHeureDebut(new \DateTime($heureDebut));
+        }
+        if ($heureFin) {
+            $absence->setHeureFin(new \DateTime($heureFin));
+        }
+        if ($motif) {
+            $absence->setMotif($motif);
+        }
+
+        $this->entityManager->persist($absence);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'Absence enregistrée avec succès.');
+        return $this->redirectToRoute('admin_absences');
     }
 
     #[Route('/justifications', name: 'admin_justifications')]
