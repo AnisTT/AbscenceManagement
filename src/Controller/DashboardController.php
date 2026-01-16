@@ -58,6 +58,10 @@ class DashboardController extends AbstractController
         $absencesCetteSemaine = $this->absenceRepository->countThisWeek();
         $absencesNonJustifiees = $this->absenceRepository->countNonJustifiees();
 
+        // ===== DATA FOR MODAL =====
+        $etudiants = $this->etudiantRepository->findAll();
+        $matieres = $this->matiereRepository->findAll();
+
         return $this->render('admin/dashboard.html.twig', [
             // KPI Cards
             'totalEtudiants' => $totalEtudiants,
@@ -76,6 +80,10 @@ class DashboardController extends AbstractController
             'absencesCeMois' => $absencesCeMois,
             'absencesCetteSemaine' => $absencesCetteSemaine,
             'absencesNonJustifiees' => $absencesNonJustifiees,
+            
+            // Modal data
+            'etudiants' => $etudiants,
+            'matieres' => $matieres,
         ]);
     }
 
@@ -133,6 +141,63 @@ class DashboardController extends AbstractController
         return $this->redirectToRoute('admin_absences');
     }
 
+    #[Route('/absences/{id}', name: 'admin_absences_show', methods: ['GET'])]
+    public function showAbsence(Absence $absence): Response
+    {
+        return $this->render('admin/absence_show.html.twig', [
+            'absence' => $absence,
+        ]);
+    }
+
+    #[Route('/absences/{id}/edit', name: 'admin_absences_edit', methods: ['GET', 'POST'])]
+    public function editAbsence(Request $request, Absence $absence): Response
+    {
+        if ($request->isMethod('POST')) {
+            $matiereId = $request->request->get('matiere');
+            $dateAbsence = $request->request->get('date');
+            $heureDebut = $request->request->get('heure_debut');
+            $heureFin = $request->request->get('heure_fin');
+            $motif = $request->request->get('motif');
+
+            $matiere = $this->matiereRepository->find($matiereId);
+            if (!$matiere) {
+                $this->addFlash('error', 'Matière invalide.');
+                return $this->redirectToRoute('admin_absences');
+            }
+
+            $absence->setMatiere($matiere);
+            $absence->setDateAbsence(new \DateTime($dateAbsence));
+            $absence->setHeureDebut($heureDebut ? new \DateTime($heureDebut) : null);
+            $absence->setHeureFin($heureFin ? new \DateTime($heureFin) : null);
+            $absence->setMotif($motif);
+
+            $this->entityManager->flush();
+
+            $this->addFlash('success', 'Absence modifiée avec succès.');
+            return $this->redirectToRoute('admin_absences');
+        }
+
+        $matieres = $this->matiereRepository->findAll();
+        return $this->render('admin/absence_edit.html.twig', [
+            'absence' => $absence,
+            'matieres' => $matieres,
+        ]);
+    }
+
+    #[Route('/absences/{id}/delete', name: 'admin_absences_delete', methods: ['POST'])]
+    public function deleteAbsence(Request $request, Absence $absence): Response
+    {
+        if ($this->isCsrfTokenValid('delete' . $absence->getId(), $request->request->get('_token'))) {
+            $this->entityManager->remove($absence);
+            $this->entityManager->flush();
+            $this->addFlash('success', 'Absence supprimée avec succès.');
+        } else {
+            $this->addFlash('error', 'Token CSRF invalide.');
+        }
+
+        return $this->redirectToRoute('admin_absences');
+    }
+
     #[Route('/justifications', name: 'admin_justifications')]
     public function justifications(): Response
     {
@@ -143,6 +208,59 @@ class DashboardController extends AbstractController
             'justificationsEnAttente' => $justificationsEnAttente,
             'justificationsTraitees' => $justificationsTraitees,
         ]);
+    }
+
+    #[Route('/justifications/{id}/validate', name: 'admin_justifications_validate', methods: ['POST'])]
+    public function validateJustification(Request $request, int $id): Response
+    {
+        $justification = $this->justificationRepository->find($id);
+        
+        if (!$justification) {
+            $this->addFlash('error', 'Justification introuvable.');
+            return $this->redirectToRoute('admin_justifications');
+        }
+
+        $commentaire = $request->request->get('commentaire');
+        
+        $justification->setStatut('validee');
+        $justification->setDateValidation(new \DateTime());
+        $justification->setValidePar($this->getUser());
+        if ($commentaire) {
+            $justification->setCommentaireValidation($commentaire);
+        }
+        
+        // Mark the absence as justified
+        $justification->getAbsence()->setJustifiee(true);
+        
+        $this->entityManager->flush();
+        
+        $this->addFlash('success', 'Justification validée avec succès.');
+        return $this->redirectToRoute('admin_justifications');
+    }
+
+    #[Route('/justifications/{id}/refuse', name: 'admin_justifications_refuse', methods: ['POST'])]
+    public function refuseJustification(Request $request, int $id): Response
+    {
+        $justification = $this->justificationRepository->find($id);
+        
+        if (!$justification) {
+            $this->addFlash('error', 'Justification introuvable.');
+            return $this->redirectToRoute('admin_justifications');
+        }
+
+        $commentaire = $request->request->get('commentaire');
+        
+        $justification->setStatut('refusee');
+        $justification->setDateValidation(new \DateTime());
+        $justification->setValidePar($this->getUser());
+        if ($commentaire) {
+            $justification->setCommentaireValidation($commentaire);
+        }
+        
+        $this->entityManager->flush();
+        
+        $this->addFlash('success', 'Justification refusée.');
+        return $this->redirectToRoute('admin_justifications');
     }
 
     #[Route('/rapport', name: 'admin_rapport')]

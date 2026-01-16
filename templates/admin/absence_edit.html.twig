@@ -1,0 +1,147 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier Absence - GestAbsences{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Modifier l'absence</h1>
+            <p class="page-subtitle">
+                <a href="{{ path('admin_absences') }}" class="text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i> Retour à la liste
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil text-primary me-2"></i>
+                        Informations de l'absence
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ path('admin_absences_edit', {id: absence.id}) }}" method="POST">
+                        <!-- Student (read-only) -->
+                        <div class="mb-3">
+                            <label class="form-label">Étudiant</label>
+                            <div class="d-flex align-items-center gap-2 p-3 bg-light rounded">
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <span class="text-primary fw-semibold">
+                                        {{ absence.etudiant.prenom|first }}{{ absence.etudiant.nom|first }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ absence.etudiant.nomComplet }}</div>
+                                    <small class="text-muted">{{ absence.etudiant.matricule }} - {{ absence.etudiant.classe.nom }}</small>
+                                </div>
+                            </div>
+                            <small class="text-muted">L'étudiant ne peut pas être modifié.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="date" 
+                                   value="{{ absence.dateAbsence|date('Y-m-d') }}" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Heure début</label>
+                                <input type="time" class="form-control" name="heure_debut" 
+                                       value="{{ absence.heureDebut ? absence.heureDebut|date('H:i') : '' }}">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Heure fin</label>
+                                <input type="time" class="form-control" name="heure_fin" 
+                                       value="{{ absence.heureFin ? absence.heureFin|date('H:i') : '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Matière</label>
+                            <select class="form-select" name="matiere" required>
+                                <option value="">Sélectionner une matière...</option>
+                                {% for matiere in matieres %}
+                                    <option value="{{ matiere.id }}" {{ absence.matiere.id == matiere.id ? 'selected' : '' }}>
+                                        {{ matiere.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Motif (optionnel)</label>
+                            <textarea class="form-control" name="motif" rows="3" 
+                                      placeholder="Ajouter un motif...">{{ absence.motif }}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary-custom">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer les modifications
+                            </button>
+                            <a href="{{ path('admin_absences') }}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle text-primary me-2"></i>
+                        Informations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-2">
+                        <strong>Créée le:</strong><br>
+                        {{ absence.createdAt|date('d/m/Y à H:i') }}
+                    </p>
+                    <p class="small text-muted mb-2">
+                        <strong>Statut:</strong><br>
+                        {% if absence.justifiee %}
+                            <span class="badge badge-justified">Justifiée</span>
+                        {% elseif absence.justification and absence.justification.isEnAttente %}
+                            <span class="badge badge-pending">En attente</span>
+                        {% else %}
+                            <span class="badge badge-not-justified">Non justifiée</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-3 border-danger">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Zone de danger
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Supprimer cette absence de manière permanente. Cette action est irréversible.
+                    </p>
+                    <form action="{{ path('admin_absences_delete', {id: absence.id}) }}" method="POST" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette absence ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ absence.id) }}">
+                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                            <i class="bi bi-trash me-1"></i> Supprimer l'absence
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

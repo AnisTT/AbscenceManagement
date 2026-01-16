@@ -4,6 +4,20 @@
 
 {% block body %}
 <div class="container-fluid">
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>{{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>{{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -74,15 +88,50 @@
                                 <td>{{ justification.dateSoumission|date('d/m/Y H:i') }}</td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-success" title="Valider">
-                                            <i class="bi bi-check-lg"></i> Valider
-                                        </button>
-                                        <button class="btn btn-danger" title="Refuser">
+                                        <form action="{{ path('admin_justifications_validate', {id: justification.id}) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-success" title="Valider">
+                                                <i class="bi bi-check-lg"></i> Valider
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-danger" title="Refuser" 
+                                                data-bs-toggle="modal" data-bs-target="#refuseModal{{ justification.id }}">
                                             <i class="bi bi-x-lg"></i> Refuser
                                         </button>
                                     </div>
                                 </td>
                             </tr>
+                            
+                            <!-- Refuse Modal -->
+                            <div class="modal fade" id="refuseModal{{ justification.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header border-0">
+                                            <h5 class="modal-title">
+                                                <i class="bi bi-x-circle text-danger me-2"></i>
+                                                Refuser la justification
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form action="{{ path('admin_justifications_refuse', {id: justification.id}) }}" method="POST">
+                                            <div class="modal-body">
+                                                <p>Vous allez refuser la justification de <strong>{{ justification.absence.etudiant.nomComplet }}</strong> 
+                                                   pour l'absence du <strong>{{ justification.absence.dateAbsence|date('d/m/Y') }}</strong>.</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Commentaire (optionnel)</label>
+                                                    <textarea class="form-control" name="commentaire" rows="3" 
+                                                              placeholder="Raison du refus..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-0">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-danger">
+                                                    <i class="bi bi-x-lg me-1"></i> Confirmer le refus
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                             {% else %}
                             <tr>
                                 <td colspan="7" class="text-center py-5">
