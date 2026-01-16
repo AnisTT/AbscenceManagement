@@ -1,0 +1,378 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - GestAbsences{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Vue générale des absences de l'établissement</p>
+        </div>
+        <div class="d-flex gap-2">
+            <span class="badge bg-light text-dark fs-6">
+                <i class="bi bi-calendar3 me-1"></i>
+                {{ "now"|date("d/m/Y") }}
+            </span>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Étudiants -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card students">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="kpi-label">Total Étudiants</p>
+                        <h2 class="kpi-value">{{ totalEtudiants }}</h2>
+                        <small class="text-muted">
+                            <i class="bi bi-people"></i> Inscrits cette année
+                        </small>
+                    </div>
+                    <div class="kpi-icon students">
+                        <i class="bi bi-mortarboard"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Absences -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card absences">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="kpi-label">Total Absences</p>
+                        <h2 class="kpi-value">{{ totalAbsences }}</h2>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar-week"></i> Cette semaine: {{ absencesCetteSemaine }}
+                        </small>
+                    </div>
+                    <div class="kpi-icon absences">
+                        <i class="bi bi-calendar-x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- En attente -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card pending">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="kpi-label">Justifications en attente</p>
+                        <h2 class="kpi-value">{{ justificationsEnAttente }}</h2>
+                        <small class="text-muted">
+                            <i class="bi bi-clock-history"></i> À traiter
+                        </small>
+                    </div>
+                    <div class="kpi-icon pending">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card rate">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="kpi-label">Taux d'absentéisme</p>
+                        <h2 class="kpi-value">{{ tauxAbsenteisme }}%</h2>
+                        <small class="text-muted">
+                            <i class="bi bi-graph-down"></i> Non justifiées: {{ absencesNonJustifiees }}
+                        </small>
+                    </div>
+                    <div class="kpi-icon rate">
+                        <i class="bi bi-percent"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row g-4">
+        <!-- Chart Section -->
+        <div class="col-12 col-lg-8">
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="bi bi-bar-chart-fill text-primary"></i>
+                    Absences par Classe
+                </h3>
+                <canvas id="absencesChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-12 col-lg-4">
+            <div class="actions-card h-100">
+                <h3 class="actions-title">
+                    <i class="bi bi-lightning-fill text-warning"></i>
+                    Actions Rapides
+                </h3>
+                
+                <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#saisirAbsenceModal">
+                    <i class="bi bi-plus-circle text-primary"></i>
+                    <span>Saisir une absence</span>
+                </a>
+                
+                <a href="{{ path('admin_justifications') }}" class="action-btn">
+                    <i class="bi bi-check-circle text-success"></i>
+                    <span>Valider justification</span>
+                    {% if justificationsEnAttente > 0 %}
+                        <span class="badge bg-warning text-dark ms-auto">{{ justificationsEnAttente }}</span>
+                    {% endif %}
+                </a>
+                
+                <a href="{{ path('admin_rapport') }}" class="action-btn">
+                    <i class="bi bi-file-earmark-pdf text-danger"></i>
+                    <span>Générer rapport</span>
+                </a>
+                
+                <a href="#" class="action-btn">
+                    <i class="bi bi-people text-info"></i>
+                    <span>Gérer utilisateurs</span>
+                </a>
+                
+                <a href="#" class="action-btn">
+                    <i class="bi bi-envelope text-secondary"></i>
+                    <span>Envoyer notifications</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Absences Table -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="table-title">
+                        <i class="bi bi-clock-history text-primary"></i>
+                        Dernières Absences
+                    </h3>
+                    <a href="{{ path('admin_absences') }}" class="btn btn-outline-custom btn-sm">
+                        <i class="bi bi-eye me-1"></i> Voir tout
+                    </a>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Étudiant</th>
+                                <th>Classe</th>
+                                <th>Date</th>
+                                <th>Matière</th>
+                                <th>Statut</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if dernieresAbsences|length > 0 %}
+                                {% for absence in dernieresAbsences %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                                <i class="bi bi-person text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ absence.etudiant.nomComplet }}</div>
+                                                <small class="text-muted">{{ absence.etudiant.matricule }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ absence.etudiant.classe.nom }}</span>
+                                    </td>
+                                    <td>
+                                        <div>{{ absence.dateAbsence|date('d/m/Y') }}</div>
+                                        {% if absence.heureDebut %}
+                                            <small class="text-muted">{{ absence.heureDebut|date('H:i') }} - {{ absence.heureFin|date('H:i') }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ absence.matiere.nom }}</td>
+                                    <td>
+                                        {% if absence.justifiee %}
+                                            <span class="badge badge-justified">
+                                                <i class="bi bi-check-circle me-1"></i> Justifiée
+                                            </span>
+                                        {% elseif absence.justification and absence.justification.isEnAttente %}
+                                            <span class="badge badge-pending">
+                                                <i class="bi bi-hourglass-split me-1"></i> En attente
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-not-justified">
+                                                <i class="bi bi-x-circle me-1"></i> Non justifiée
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary" title="Détails">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Aucune absence enregistrée
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Saisir Absence -->
+<div class="modal fade" id="saisirAbsenceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle text-primary me-2"></i>
+                    Saisir une absence
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="absenceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Étudiant</label>
+                        <select class="form-select" required>
+                            <option value="">Sélectionner un étudiant...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" value="{{ "now"|date("Y-m-d") }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Heure début</label>
+                            <input type="time" class="form-control" value="08:00">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Heure fin</label>
+                            <input type="time" class="form-control" value="10:00">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Matière</label>
+                        <select class="form-select" required>
+                            <option value="">Sélectionner une matière...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motif (optionnel)</label>
+                        <textarea class="form-control" rows="2" placeholder="Ajouter un motif..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="absenceForm" class="btn btn-primary-custom">
+                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données du graphique depuis le contrôleur
+    const chartLabels = {{ chartLabels|raw }};
+    const chartData = {{ chartData|raw }};
+    
+    // Configuration du graphique
+    const ctx = document.getElementById('absencesChart').getContext('2d');
+    
+    // Gradient pour les barres
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(79, 70, 229, 0.8)');
+    gradient.addColorStop(1, 'rgba(99, 102, 241, 0.4)');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartLabels.length > 0 ? chartLabels : ['L1 Info', 'L2 Info', 'L3 Info', 'M1 Info', 'M2 Info'],
+            datasets: [{
+                label: 'Nombre d\'absences',
+                data: chartData.length > 0 ? chartData : [12, 19, 8, 15, 6],
+                backgroundColor: gradient,
+                borderColor: 'rgba(79, 70, 229, 1)',
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    padding: 12,
+                    borderRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        title: function(context) {
+                            return 'Classe: ' + context[0].label;
+                        },
+                        label: function(context) {
+                            return context.parsed.y + ' absences';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        precision: 0,
+                        color: '#64748b'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#64748b'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

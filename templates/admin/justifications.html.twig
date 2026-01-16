@@ -1,0 +1,166 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Justifications - GestAbsences{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Gestion des Justifications</h1>
+            <p class="page-subtitle">Validez ou refusez les justifications d'absence</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- En attente -->
+        <div class="col-12">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="table-title">
+                        <i class="bi bi-hourglass-split text-warning"></i>
+                        En attente de validation
+                        {% if justificationsEnAttente|length > 0 %}
+                            <span class="badge bg-warning text-dark ms-2">{{ justificationsEnAttente|length }}</span>
+                        {% endif %}
+                    </h3>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Étudiant</th>
+                                <th>Classe</th>
+                                <th>Date absence</th>
+                                <th>Description</th>
+                                <th>Pièce jointe</th>
+                                <th>Date soumission</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for justification in justificationsEnAttente %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person text-warning"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ justification.absence.etudiant.nomComplet }}</div>
+                                            <small class="text-muted">{{ justification.absence.etudiant.matricule }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ justification.absence.etudiant.classe.nom }}</span>
+                                </td>
+                                <td>{{ justification.absence.dateAbsence|date('d/m/Y') }}</td>
+                                <td>
+                                    <div style="max-width: 200px;">
+                                        {{ justification.description|length > 50 ? justification.description|slice(0, 50) ~ '...' : justification.description }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if justification.pieceJointe %}
+                                        <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-paperclip"></i> Voir
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Aucune</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ justification.dateSoumission|date('d/m/Y H:i') }}</td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success" title="Valider">
+                                            <i class="bi bi-check-lg"></i> Valider
+                                        </button>
+                                        <button class="btn btn-danger" title="Refuser">
+                                            <i class="bi bi-x-lg"></i> Refuser
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+                                        Aucune justification en attente
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Récemment traitées -->
+        <div class="col-12">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="table-title">
+                        <i class="bi bi-clock-history text-secondary"></i>
+                        Récemment traitées
+                    </h3>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Étudiant</th>
+                                <th>Date absence</th>
+                                <th>Statut</th>
+                                <th>Traité par</th>
+                                <th>Date validation</th>
+                                <th>Commentaire</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for justification in justificationsTraitees %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ justification.absence.etudiant.nomComplet }}</div>
+                                </td>
+                                <td>{{ justification.absence.dateAbsence|date('d/m/Y') }}</td>
+                                <td>
+                                    {% if justification.isValidee %}
+                                        <span class="badge badge-justified">
+                                            <i class="bi bi-check-circle me-1"></i> Validée
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-not-justified">
+                                            <i class="bi bi-x-circle me-1"></i> Refusée
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if justification.validePar %}
+                                        {{ justification.validePar.nomComplet }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ justification.dateValidation|date('d/m/Y H:i') }}</td>
+                                <td>{{ justification.commentaireValidation ?? '-' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    Aucune justification traitée récemment
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

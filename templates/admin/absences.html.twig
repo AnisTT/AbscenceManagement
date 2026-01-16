@@ -1,0 +1,221 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Toutes les Absences - GestAbsences{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Gestion des Absences</h1>
+            <p class="page-subtitle">Liste complète des absences enregistrées</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-custom">
+                <i class="bi bi-funnel me-1"></i> Filtrer
+            </button>
+            <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#saisirAbsenceModal">
+                <i class="bi bi-plus-lg me-1"></i> Nouvelle absence
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Row -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Classe</label>
+                    <select class="form-select">
+                        <option value="">Toutes les classes</option>
+                        <option>L1 Informatique</option>
+                        <option>L2 Informatique</option>
+                        <option>L3 Informatique</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Date début</label>
+                    <input type="date" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Date fin</label>
+                    <input type="date" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Statut</label>
+                    <select class="form-select">
+                        <option value="">Tous</option>
+                        <option value="justifiee">Justifiées</option>
+                        <option value="non_justifiee">Non justifiées</option>
+                        <option value="en_attente">En attente</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Absences Table -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="form-check-input">
+                        </th>
+                        <th>Étudiant</th>
+                        <th>Classe</th>
+                        <th>Date</th>
+                        <th>Horaire</th>
+                        <th>Matière</th>
+                        <th>Statut</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for absence in absences %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <span class="text-primary fw-semibold">
+                                        {{ absence.etudiant.prenom|first }}{{ absence.etudiant.nom|first }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ absence.etudiant.nomComplet }}</div>
+                                    <small class="text-muted">{{ absence.etudiant.matricule }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ absence.etudiant.classe.nom }}</span>
+                        </td>
+                        <td>{{ absence.dateAbsence|date('d/m/Y') }}</td>
+                        <td>
+                            {% if absence.heureDebut and absence.heureFin %}
+                                {{ absence.heureDebut|date('H:i') }} - {{ absence.heureFin|date('H:i') }}
+                            {% else %}
+                                <span class="text-muted">Journée</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ absence.matiere.nom }}</td>
+                        <td>
+                            {% if absence.justifiee %}
+                                <span class="badge badge-justified">
+                                    <i class="bi bi-check-circle me-1"></i> Justifiée
+                                </span>
+                            {% elseif absence.justification and absence.justification.isEnAttente %}
+                                <span class="badge badge-pending">
+                                    <i class="bi bi-hourglass-split me-1"></i> En attente
+                                </span>
+                            {% else %}
+                                <span class="badge badge-not-justified">
+                                    <i class="bi bi-x-circle me-1"></i> Non justifiée
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i> Voir détails</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i> Modifier</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i> Supprimer</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                Aucune absence trouvée
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <div class="text-muted small">
+                Affichage de {{ absences|length }} absences
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Saisir Absence -->
+<div class="modal fade" id="saisirAbsenceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle text-primary me-2"></i>
+                    Saisir une absence
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="absenceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Étudiant</label>
+                        <select class="form-select" required>
+                            <option value="">Sélectionner un étudiant...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" value="{{ "now"|date("Y-m-d") }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Heure début</label>
+                            <input type="time" class="form-control" value="08:00">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Heure fin</label>
+                            <input type="time" class="form-control" value="10:00">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Matière</label>
+                        <select class="form-select" required>
+                            <option value="">Sélectionner une matière...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motif (optionnel)</label>
+                        <textarea class="form-control" rows="2" placeholder="Ajouter un motif..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="absenceForm" class="btn btn-primary-custom">
+                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

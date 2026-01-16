@@ -1,0 +1,38 @@
+# Fichiers générés
+/vendor/
+/var/
+
+# Configuration locale
+/.env.local
+/.env.local.php
+/.env.*.local
+
+# PHPUnit
+/phpunit.xml
+.phpunit.result.cache
+
+# Build
+/public/bundles/
+
+# Composer
+/composer.phar
+
+# IDE
+/.idea/
+/.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###

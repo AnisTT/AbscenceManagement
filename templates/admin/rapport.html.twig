@@ -1,0 +1,211 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rapports - GestAbsences{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Génération de Rapports</h1>
+            <p class="page-subtitle">Générez des rapports détaillés sur les absences</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Génération de rapport -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                        Générer un rapport
+                    </h5>
+                    
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Type de rapport</label>
+                            <select class="form-select">
+                                <option>Rapport global</option>
+                                <option>Rapport par classe</option>
+                                <option>Rapport par étudiant</option>
+                                <option>Rapport mensuel</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Classe (optionnel)</label>
+                            <select class="form-select">
+                                <option value="">Toutes les classes</option>
+                                {% for classe in classes %}
+                                    <option value="{{ classe.id }}">{{ classe.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Date début</label>
+                                <input type="date" class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Date fin</label>
+                                <input type="date" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Format</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" id="formatPdf" checked>
+                                    <label class="form-check-label" for="formatPdf">
+                                        <i class="bi bi-file-pdf text-danger"></i> PDF
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" id="formatExcel">
+                                    <label class="form-check-label" for="formatExcel">
+                                        <i class="bi bi-file-excel text-success"></i> Excel
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary-custom w-100">
+                            <i class="bi bi-download me-2"></i> Générer le rapport
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques par classe -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="bi bi-bar-chart text-primary me-2"></i>
+                        Statistiques par classe
+                    </h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Classe</th>
+                                    <th>Total absences</th>
+                                    <th>Justifiées</th>
+                                    <th>Non justifiées</th>
+                                    <th>Taux</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in statsParClasse %}
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold">{{ stat.classe }}</span>
+                                    </td>
+                                    <td>{{ stat.total }}</td>
+                                    <td>
+                                        <span class="text-success">
+                                            <i class="bi bi-check-circle"></i>
+                                            {{ (stat.total * 0.6)|round }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-danger">
+                                            <i class="bi bi-x-circle"></i>
+                                            {{ (stat.total * 0.4)|round }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 8px; width: 100px;">
+                                            <div class="progress-bar bg-danger" style="width: {{ (stat.total / 50 * 100)|round }}%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        Aucune donnée disponible
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphique mensuel -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="bi bi-graph-up text-success me-2"></i>
+                        Évolution mensuelle
+                    </h5>
+                    <canvas id="monthlyChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    
+    // Données mensuelles
+    const monthlyData = {{ statsMensuelles|json_encode|raw }};
+    const labels = monthlyData.length > 0 
+        ? monthlyData.map(item => item.mois) 
+        : ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
+    const data = monthlyData.length > 0 
+        ? monthlyData.map(item => item.total) 
+        : [65, 59, 80, 81, 56, 55];
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Absences',
+                data: data,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#4f46e5',
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
